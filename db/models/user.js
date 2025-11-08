@@ -18,11 +18,11 @@ module.exports = (sequelize, DataTypes) => {
       email: { type: DataTypes.STRING(100), allowNull: false, unique: true },
       password: { type: DataTypes.STRING, allowNull: false },
       created_by: {
-        type: DataTypes.UUID,
+        type: DataTypes.DATE,
         allowNull: true
       },
       updated_by: {
-        type: DataTypes.UUID,
+        type: DataTypes.DATE,
         allowNull: true
       },
       deleted_at: {
