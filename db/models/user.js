@@ -1,39 +1,61 @@
 'use strict'
 const { Model } = require('sequelize')
-
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
     static associate(models) {
+      User.belongsTo(models.Role, {
+        foreignKey: 'role_id',
+        as: 'role'
+      })
     }
   }
 
   User.init(
     {
       id: {
-        type: DataTypes.UUID,
-        primaryKey: true,
-        defaultValue: DataTypes.UUIDV4
+        type: DataTypes.STRING,
+        primaryKey: true
       },
-      name: { type: DataTypes.STRING(100), allowNull: false },
-      email: { type: DataTypes.STRING(100), allowNull: false, unique: true },
-      password: { type: DataTypes.STRING, allowNull: false },
-      created_by: {
-        type: DataTypes.DATE,
-        allowNull: true
+      role_id: {
+        type: DataTypes.STRING,
+        allowNull: false
       },
-      updated_by: {
-        type: DataTypes.DATE,
-        allowNull: true
+      username: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        unique: true
       },
-      deleted_at: {
+      email: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        unique: true
+      },
+      status: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
+      },
+      password: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
+      },
+      created_at: {
         type: DataTypes.DATE,
-        allowNull: true
+        allowNull: false,
+        defaultValue: DataTypes.NOW
+      },
+      updated_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW
       }
     },
     {
       sequelize,
       modelName: 'User',
       tableName: 'users',
+      paranoid: true,
       timestamps: true,
       underscored: true
     }

@@ -9,14 +9,44 @@ if (args.length === 0) {
   process.exit(1)
 }
 
+function generateMigrationId(migrationDir) {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const prefix = `${year}${month}`
+
+  let sequence = 1
+
+  if (fs.existsSync(migrationDir)) {
+    const files = fs.readdirSync(migrationDir)
+
+    const sameMonthFiles = files.filter((file) => file.startsWith(prefix))
+
+    if (sameMonthFiles.length > 0) {
+      const numbers = sameMonthFiles.map((file) => {
+        const match = file.match(/^(\d+)/)
+        return match ? parseInt(match[1], 10) : 0
+      })
+
+      const maxNumber = Math.max(...numbers)
+      sequence = parseInt(String(maxNumber).slice(6)) + 1
+    }
+  }
+
+  const seqStr = String(sequence).padStart(4, '0')
+
+  return `${prefix}${seqStr}`
+}
+
 const name = args[0]
-const timestamp = Date.now()
 
 const rootDir = path.resolve(__dirname, '../..')
 
 const migrationDir = path.join(rootDir, 'db', 'migrations')
 const seederDir = path.join(rootDir, 'db', 'seeders')
 const modelDir = path.join(rootDir, 'db', 'models')
+
+const timestamp = generateMigrationId(migrationDir)
 
 ;[migrationDir, modelDir, seederDir].forEach((dir) => {
   if (!fs.existsSync(dir)) {

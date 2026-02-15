@@ -1,13 +1,26 @@
-'use strict';
+'use strict'
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up (queryInterface, Sequelize) {
+  async up(queryInterface, Sequelize) {
     await queryInterface.createTable('users', {
       id: {
         type: Sequelize.STRING,
         allowNull: false,
         primaryKey: true
+      },
+      role_id: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        references: {
+          // Uncomment this if your projects using RBAC
+          model: 'roles',
+          key: 'id'
+        }
+      },
+      name: {
+        type: Sequelize.STRING,
+        allowNull: false
       },
       username: {
         type: Sequelize.STRING,
@@ -21,6 +34,11 @@ module.exports = {
       },
       password: {
         type: Sequelize.STRING,
+        allowNull: false
+      },
+      status: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,
         allowNull: false
       },
       created_at: {
@@ -37,10 +55,10 @@ module.exports = {
         type: Sequelize.DATE,
         allowNull: true
       }
-    });
+    })
   },
 
-  async down (queryInterface, Sequelize) {
-    await queryInterface.dropTable('users');
+  async down(queryInterface, Sequelize) {
+    await queryInterface.dropTable('users')
   }
-};
+}

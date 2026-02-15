@@ -1,35 +1,97 @@
-const express = require("express");
-const cors = require("cors");
-const http = require("http");
-const route = require("./src/routes.js");
-const authRoutes = require("./src/modules/auth");
+require('dotenv').config({})
 
-const app = express();
+const express = require('express')
+const app = express()
+const morgan = require('morgan')
+const cors = require('cors')
+const route = require('./src/routes')
+const { createServer } = require('node:http')
+const cookieParser = require('cookie-parser')
+const helmet = require('helmet')
 
-// ✅ Middleware parsing JSON
-app.use(express.json());
+const mode = process.env.NODE_ENV || 'development'
+const allowedOriginsRaw = process.env.ALLOWED_ORIGINS || ''
+const allowAll = allowedOriginsRaw === '*'
 
-// ✅ Auth route tanpa prefix /api
-app.use("/auth", authRoutes);
+const allowedOrigins = allowAll
+  ? []
+  : allowedOriginsRaw
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean)
 
-// ✅ Routes utama
-app.use("/api", route);
+app.use(
+  helmet({
+    hidePoweredBy: true
+  })
+)
+app.disable('x-powered-by')
 
-// ✅ Handling 404
+const corsOptions = (req, callback) => {
+  const origin = req.headers.origin
+  const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https'
+
+  const isAllowed = () => {
+    if (allowAll) return true
+    if (!origin) return false
+    return allowedOrigins.includes(origin)
+  }
+
+  if (mode === 'production') {
+    if (isAllowed()) {
+      return callback(null, { origin: true, credentials: true })
+    }
+    return callback(null, false)
+  }
+
+  if (isSecure) {
+    if (isAllowed()) {
+      return callback(null, { origin: true, credentials: true })
+    }
+    return callback(null, false)
+  }
+
+  return callback(null, { origin: true, credentials: true })
+}
+
+app.use(morgan('dev'))
+app.use(cors(corsOptions))
+app.use(cookieParser())
+
+app.use(
+  express.json({
+    limit: '50mb',
+    verify: (req, res, buf) => {
+      req.rawBody = buf.toString()
+    }
+  })
+)
+
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: '50mb',
+    verify: (req, res, buf) => {
+      req.rawBody = buf.toString()
+    }
+  })
+)
+
+app.use('/api/v1', route)
+
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: "Route not found",
-    data: null,
-  });
-});
+    message: 'Route not found',
+    data: null
+  })
+})
 
-// ✅ Jalankan server
-const port = process.env.PORT || 5000;
-const server = http.createServer(app);
+const port = process.env.PORT || 8000
+const server = createServer(app)
 
 server.listen(port, () => {
-  console.log(`⚡ Server running on PORT: ${port}`);
-});
+  console.log(`Server Running ⚡ PORT : ${port}`)
+})
 
-module.exports = app;
+module.exports = app
