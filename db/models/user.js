@@ -16,6 +16,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         primaryKey: true
       },
+      email: {
+        type: DataTypes.STRING(100),
+        allowNull: false
+      },
       role_id: {
         type: DataTypes.STRING,
         allowNull: false
@@ -25,20 +29,14 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         unique: true
       },
-      email: {
-        type: DataTypes.STRING(100),
-        allowNull: false,
-        unique: true
+      password: {
+        type: DataTypes.STRING,
+        allowNull: false
       },
       status: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true
-      },
-      password: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true
       },
       created_at: {
         type: DataTypes.DATE,

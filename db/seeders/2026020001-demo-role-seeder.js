@@ -3,23 +3,29 @@ const cuid = require('cuid')
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.bulkInsert(
-      'roles',
-      [
-        {
-          id: 'role_super_admin_id_001',
-          code: 'SUPER_ADMIN',
-          name: 'Super Admin',
-          status: true,
-          is_global_access: true,
-          created_at: new Date(),
-          updated_at: new Date()
-        }
-      ],
-      { ignoreDuplicates: true }
+    const now = new Date()
+    const existingRoles = await queryInterface.sequelize.query(
+      `SELECT name FROM roles`,
+      { type: Sequelize.QueryTypes.SELECT }
     )
+    const existingRoleNames = new Set(existingRoles.map((role) => role.name))
+    const rolesToInsert = [
+      {
+        id: cuid(),
+        name: 'ADMIN',
+        code: 'ADM',
+        description: 'Administrator with full access',
+        status: true,
+        created_at: now,
+        updated_at: now
+      }
+    ].filter((role) => !existingRoleNames.has(role.name))
+
+    if (rolesToInsert.length) {
+      await queryInterface.bulkInsert('roles', rolesToInsert)
+    }
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.bulkDelete('roles', { code: 'SUPER_ADMIN' }, {})
+    await queryInterface.bulkDelete('roles', null, {})
   }
-}
+};

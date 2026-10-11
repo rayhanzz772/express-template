@@ -1,17 +1,23 @@
 'use strict'
 const cuid = require('cuid')
-const bcrypt = require('bcrypt')
+const argon2 = require('argon2')
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    const hashedPassword = await bcrypt.hash('Password123!', 10)
+    const hashedPassword = await argon2.hash('Password123!')
+    const role = await queryInterface.sequelize.query(
+      `SELECT id FROM roles WHERE code = 'ADM'`,
+      { type: Sequelize.QueryTypes.SELECT }
+    )
+    if (role.length == 0) {
+      throw new Error('No role found for code ADM')
+    }
     await queryInterface.bulkInsert(
       'users',
       [
         {
           id: cuid(),
-          role_id: 'role_super_admin_id_001',
-          name: 'Super Administrator',
+          role_id: role[0].id,
           username: 'superadmin',
           email: 'admin@example.com',
           password: hashedPassword,
@@ -21,8 +27,7 @@ module.exports = {
         },
         {
           id: cuid(),
-          role_id: 'role_super_admin_id_001',
-          name: 'John Doe',
+          role_id: role[0].id,
           username: 'john_doe',
           email: 'john@example.com',
           password: hashedPassword,

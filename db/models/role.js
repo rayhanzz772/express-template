@@ -10,9 +10,11 @@ module.exports = (sequelize, DataTypes) => {
         as: 'users'
       })
 
-      Role.hasMany(models.RoleAccess, {
+      Role.belongsToMany(models.Permission, {
+        through: models.RolePermission,
         foreignKey: 'role_id',
-        as: 'role_accesses'
+        otherKey: 'permission_id',
+        as: 'permissions'
       })
     }
   }
@@ -27,28 +29,20 @@ module.exports = (sequelize, DataTypes) => {
       },
       code: {
         type: DataTypes.STRING(50),
-        allowNull: false
+        allowNull: false,
+        unique: true
       },
       name: {
         type: DataTypes.STRING(100),
         allowNull: false
       },
+      description: {
+        type: DataTypes.TEXT,
+        allowNull: true
+      },
       status: {
         type: DataTypes.BOOLEAN,
         allowNull: false
-      },
-      is_global_access: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false
-      },
-      created_by: {
-        type: DataTypes.STRING,
-        allowNull: true
-      },
-      updated_by: {
-        type: DataTypes.STRING,
-        allowNull: true
       },
       created_at: {
         type: DataTypes.DATE,

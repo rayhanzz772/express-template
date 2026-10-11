@@ -1,42 +1,60 @@
 const jwt = require('jsonwebtoken')
-const bcrypt = require('bcrypt')
 const db = require('../../../db/models')
 const { api } = require('../../utils/api')
+const { compare } = require('../../utils/argon')
 const { HttpStatusCode } = require('axios')
 
 const User = db.User
 
+const getUserRoleName = (user) => user?.role?.name || 'EMPLOYEE'
+const getUserPermissionKeys = (user) => user?.role?.permissions?.map((permission) => permission.key) || []
+
+const roleWithPermissions = {
+  model: db.Role,
+  as: 'role',
+  attributes: ['id', 'name'],
+  include: [{
+    model: db.Permission,
+    as: 'permissions',
+    attributes: ['key']
+  }]
+}
+
 class Controller {
-  static async login(req, res) {
+  static async login(req, res, next) {
     try {
-      const { username, password } = req.body
+      const email = req.body?.email
+      const password = req.body?.password
+
+      if (!email || !password) {
+        throw { code: HttpStatusCode.BadRequest, message: 'Email and password are required' }
+      }
 
       const user = await User.findOne({
         where: {
-          [db.Sequelize.Op.or]: [{ email: username }, { username: username }],
-          status: true
+          email: email
         },
-        include: [
-          {
-            model: db.Role,
-            as: 'role'
-          }
-        ]
+        include: [roleWithPermissions]
       })
 
       if (!user) {
         throw { code: 400, message: 'User not found' }
       }
 
-      const isValid = await bcrypt.compare(password, user.password)
+      if (user.status === false) {
+        throw { code: 400, message: 'User is inactive' }
+      }
+
+      const isValid = await compare(password, user.password)
 
       if (!isValid) {
         throw { code: 400, message: 'Invalid Password' }
       }
 
+      const roleName = getUserRoleName(user)
       const payload = {
         userId: user.id,
-        role: user.role?.code,
+        role: roleName,
         status: user.status
       }
 
@@ -53,71 +71,55 @@ class Controller {
 
       const userSafe = {
         id: user.id,
-        role: user.role?.name,
-        status: user.status,
-        createdAt: user.createdAt,
-        outletId: null,
-        outletCode: null
+        token: token,
+        email: user.email,
+        role: roleName,
+        permissions: getUserPermissionKeys(user)
       }
 
       return res
         .status(HttpStatusCode.Ok)
         .json(api(userSafe, HttpStatusCode.Ok, { req }))
     } catch (err) {
-      const code = err?.code ?? HttpStatusCode.InternalServerError
-      return res.status(code).json(api(null, code, { err }))
+      return next(err)
     }
   }
 
-  static async logout(req, res) {
+  static async logout(req, res, next) {
     try {
       res.clearCookie('token')
       return res
         .status(HttpStatusCode.Ok)
         .json(api(null, HttpStatusCode.Ok, { req }))
     } catch (err) {
-      const code = err?.code ?? HttpStatusCode.InternalServerError
-      return res.status(code).json(api(null, code, { err }))
+      return next(err)
     }
   }
 
-  static async getMe(req, res) {
+  static async getMe(req, res, next) {
     try {
       const userId = req.user.id
 
       const user = await User.findByPk(userId, {
         attributes: { exclude: ['password'] },
-        include: [
-          {
-            model: db.Role,
-            as: 'role'
-          }
-        ]
+        include: [roleWithPermissions]
       })
 
       if (!user) throw new Error('User not found')
 
       const result = {
         id: user.id,
-        username: user.username,
         email: user.email,
         status: user.status,
-        role: user.role
-          ? {
-              id: user.role.id,
-              is_global_access: user.role.is_global_access,
-              name: user.role.name,
-              code: user.role.code
-            }
-          : null
+        role: getUserRoleName(user),
+        permissions: getUserPermissionKeys(user)
       }
 
       return res
         .status(HttpStatusCode.Ok)
         .json(api(result, HttpStatusCode.Ok, { req }))
     } catch (err) {
-      const code = err?.code ?? HttpStatusCode.InternalServerError
-      return res.status(code).json(api(null, code, { err }))
+      return next(err)
     }
   }
 }

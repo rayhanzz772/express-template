@@ -1,6 +1,4 @@
-'use strict'
-
-/** @type {import('sequelize-cli').Migration} */
+'use strict';
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('roles', {
@@ -11,58 +9,43 @@ module.exports = {
       },
       code: {
         type: Sequelize.STRING,
-        allowNull: false
+        allowNull: false,
+        unique: true
       },
       name: {
         type: Sequelize.STRING,
-        allowNull: false
+        allowNull: false,
+        unique: true
+      },
+      description: {
+        type: Sequelize.TEXT,
+        allowNull: true
       },
       status: {
         type: Sequelize.BOOLEAN,
-        defaultValue: true,
-        allowNull: false
-      },
-      is_global_access: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: false,
-        allowNull: false
-      },
-      created_by: {
-        type: Sequelize.STRING,
-        allowNull: true
-      },
-      updated_by: {
-        type: Sequelize.STRING,
-        allowNull: true
+        allowNull: false,
+        defaultValue: true
       },
       created_at: {
+        allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.NOW,
-        allowNull: false
+        field: 'created_at',
+        defaultValue: Sequelize.NOW
       },
       updated_at: {
+        allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.NOW,
-        allowNull: false
+        field: 'updated_at',
+        defaultValue: Sequelize.NOW
       },
       deleted_at: {
+        allowNull: true,
         type: Sequelize.DATE,
-        allowNull: true
+        field: 'deleted_at'
       }
     })
-
-    await queryInterface.addIndex('roles', ['code'], {
-      unique: true,
-      name: 'uniq_roles_code',
-      where: {
-        deleted_at: null
-      }
-    })
-
-    await queryInterface.addIndex('roles', ['name'])
   },
-
-  async down(queryInterface) {
+  async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('roles')
   }
 }
